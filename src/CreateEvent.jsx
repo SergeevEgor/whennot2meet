@@ -30,7 +30,7 @@ export default function CreateEvent() {
         endTime,
         timezone,
       },
-      participants: {}
+      participants: {},
     });
 
     localStorage.removeItem("username");
@@ -124,4 +124,3 @@ export default function CreateEvent() {
     </div>
   );
 }
-
