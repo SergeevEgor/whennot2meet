@@ -27,6 +27,41 @@ import {
   return dates;
 }
 
+function timeSlots(startTime, endTime, timezone) {
+  const slots = [];
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+
+  let cur = new Date(Date.UTC(1970, 0, 1, sh, sm));
+  const end = new Date(Date.UTC(1970, 0, 1, eh, em));
+
+  while (cur <= end) {
+    const label = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: timezone,
+    }).format(cur);
+
+    const h = cur.getUTCHours();
+    const m = cur.getUTCMinutes();
+    slots.push({ label, key: `${h}:${m.toString().padStart(2, "0")}` });
+    cur.setUTCMinutes(cur.getUTCMinutes() + 15);
+  }
+
+  return slots;
+}
+
+function dateRange(startDate, endDate) {
+  const dates = [];
+  let cur = new Date(startDate);
+  const end = new Date(endDate);
+  while (cur <= end) {
+    dates.push(new Date(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+}
 export default function EventPage() {
   const { eventId } = useParams();
   const [meta, setMeta] = useState(null);
