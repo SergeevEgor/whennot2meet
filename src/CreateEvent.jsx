@@ -9,9 +9,6 @@ export default function CreateEvent() {
   const [endDate, setEndDate] = useState("");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("21:00");
-  const [timezone, setTimezone] = useState(
-    Intl.DateTimeFormat().resolvedOptions().timeZone
-  );
   const navigate = useNavigate();
 
   const createEvent = async (e) => {
@@ -28,7 +25,6 @@ export default function CreateEvent() {
         endDate,
         startTime,
         endTime,
-        timezone,
       },
       participants: {},
     });
@@ -95,21 +91,6 @@ export default function CreateEvent() {
                 className="flex-1 border border-gray-300 rounded-md px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
               />
             </div>
-          </div>
-
-          {/* Timezone */}
-          <div>
-            <label className="text-base font-medium text-gray-700 block mb-2">Timezone</label>
-            <select
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-md px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            >
-              {Intl.supportedValuesOf("timeZone").map((tz) => (
-                <option key={tz} value={tz}>{tz}</option>
-              ))}
-            </select>
           </div>
 
           {/* Submit */}

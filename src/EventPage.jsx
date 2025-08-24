@@ -1,36 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { db } from "./firebase";
-import {
-  doc,
-  getDoc,
-  setDoc,
-  onSnapshot,
-  updateDoc,
-} from "firebase/firestore";
+import { doc, setDoc, onSnapshot, updateDoc, deleteField } from "firebase/firestore";
 
-function timeSlots(startTime, endTime, timezone) {
+function timeSlots(startTime, endTime) {
   const slots = [];
   const [sh, sm] = startTime.split(":").map(Number);
   const [eh, em] = endTime.split(":").map(Number);
 
-  let cur = new Date(Date.UTC(1970, 0, 1, sh, sm));
-  const end = new Date(Date.UTC(1970, 0, 1, eh, em));
+  let cur = new Date(0, 0, 0, sh, sm);
+  const end = new Date(0, 0, 0, eh, em);
 
   while (cur <= end) {
-    const label = new Intl.DateTimeFormat("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: timezone,
-    }).format(cur);
-
-    const h = cur.getUTCHours();
-    const m = cur.getUTCMinutes();
+    const h = cur.getHours();
+    const m = cur.getMinutes();
+    const label = `${(h % 12) || 12}:${m.toString().padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
     slots.push({ label, key: `${h}:${m.toString().padStart(2, "0")}` });
-    cur.setUTCMinutes(cur.getUTCMinutes() + 15);
+    cur.setMinutes(cur.getMinutes() + 15);
   }
-
   return slots;
 }
 
@@ -39,23 +26,41 @@ function dateRange(startDate, endDate) {
   let cur = new Date(startDate);
   const end = new Date(endDate);
   while (cur <= end) {
-    dates.push(new Date(cur));
+    dates.push({
+      iso: cur.toISOString().split("T")[0],
+      label: cur.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      day: cur.toLocaleDateString("en-US", { weekday: "short" }),
+    });
     cur.setDate(cur.getDate() + 1);
   }
   return dates;
 }
 
 export default function EventPage() {
-  const { id } = useParams();
+  const { eventId } = useParams();
   const [meta, setMeta] = useState(null);
   const [participants, setParticipants] = useState({});
-  const [username, setUsername] = useState(localStorage.getItem("username") || "");
-  const [userTimezone, setUserTimezone] = useState(
-    Intl.DateTimeFormat().resolvedOptions().timeZone
-  );
+  const [name, setName] = useState(localStorage.getItem("username") || "");
+  const [hoverInfo, setHoverInfo] = useState(null);
+  const [removeMode, setRemoveMode] = useState(false);
+
+  const isDragging = useRef(false);
+  const dragValue = useRef(null);
+
+  const normalizeName = (raw) => raw.trim().toLowerCase();
+
+  const gridToObject = (grid) => {
+    const obj = {};
+    grid.forEach((row, r) => {
+      row.forEach((cell, c) => {
+        obj[`r${r}_c${c}`] = cell;
+      });
+    });
+    return obj;
+  };
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "events", id), (docSnap) => {
+    const unsub = onSnapshot(doc(db, "events", eventId), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setMeta(data.meta);
@@ -63,41 +68,60 @@ export default function EventPage() {
       }
     });
     return () => unsub();
-  }, [id]);
+  }, [eventId]);
 
-  if (!meta) return <div className="p-6">Loading...</div>;
-
-  const times = timeSlots(meta.startTime, meta.endTime, userTimezone);
-  const days = dateRange(meta.startDate, meta.endDate);
-
-  const toggleCell = async (dayKey, timeKey) => {
-    if (!username) return;
-    const userData = participants[username] || {};
-    const cellKey = `${dayKey}-${timeKey}`;
+  const toggleCell = async (r, c) => {
+    if (!name) return;
+    const key = normalizeName(name);
+    const userData = participants[key] || {};
+    const cellKey = `r${r}_c${c}`;
     const updated = { ...userData, [cellKey]: !userData[cellKey] };
-
-    await updateDoc(doc(db, "events", id), {
-      [`participants.${username}`]: updated,
-    });
+    await updateDoc(doc(db, "events", eventId), { [`participants.${key}`]: updated });
   };
 
-  const handleNameSubmit = async (e) => {
-    e.preventDefault();
-    if (!username.trim()) return;
-    localStorage.setItem("username", username);
-    if (!participants[username]) {
-      await setDoc(
-        doc(db, "events", id),
-        { participants: { [username]: {} } },
-        { merge: true }
-      );
+  const removeUser = async (userKey) => {
+    if (!window.confirm(`Remove ${userKey}?`)) return;
+    await updateDoc(doc(db, "events", eventId), { [`participants.${userKey}`]: deleteField() });
+    if (normalizeName(name) === userKey) {
+      setName("");
+      localStorage.removeItem("username");
     }
   };
 
-  return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold text-emerald-700 mb-2">{meta.title}</h1>
+  if (!meta) return <div className="p-4 text-center">Loading...</div>;
 
+  const times = timeSlots(meta.startTime, meta.endTime);
+  const dates = dateRange(meta.startDate, meta.endDate);
+
+  const participantKeys = Object.keys(participants || {});
+  const totalUsers = participantKeys.length;
+
+  const availabilityCount = Array(times.length).fill(null).map(() => Array(dates.length).fill(0));
+  participantKeys.forEach((u) => {
+    const obj = participants[u];
+    times.forEach((_, r) => {
+      dates.forEach((_, c) => {
+        if (obj[`r${r}_c${c}`] === false) {
+          availabilityCount[r][c] += 1;
+        }
+      });
+    });
+  });
+
+  const heatmapColor = (count) => {
+    if (totalUsers === 0) return "bg-gray-100";
+    const ratio = count / totalUsers;
+    if (ratio === 0) return "bg-rose-100";
+    if (ratio <= 0.25) return "bg-emerald-100";
+    if (ratio <= 0.5) return "bg-emerald-300";
+    if (ratio <= 0.75) return "bg-emerald-400";
+    if (ratio < 1) return "bg-emerald-500 text-white";
+    return "bg-emerald-700 text-white";
+  };
+
+  return (
+    <div className="flex flex-col items-center p-4 select-none">
+      <h1 className="text-3xl font-bold text-emerald-700 mb-2">{meta.title}</h1>
       <div className="flex items-center gap-3 mb-4">
         <p className="text-sm text-gray-500">Share this link: {window.location.href}</p>
         <button
@@ -118,82 +142,83 @@ export default function EventPage() {
       </div>
 
       <div className="mb-4">
-        <label className="text-sm font-medium text-gray-700 mr-2">Your Timezone:</label>
-        <select
-          value={userTimezone}
-          onChange={(e) => setUserTimezone(e.target.value)}
-          className="border rounded px-2 py-1 text-sm"
-        >
-          {Intl.supportedValuesOf("timeZone").map((tz) => (
-            <option key={tz} value={tz}>{tz}</option>
-          ))}
-        </select>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            localStorage.setItem("username", e.target.value);
+          }}
+          placeholder="Enter your name"
+          className="border rounded px-2 py-1"
+        />
       </div>
 
-      {!username ? (
-        <form onSubmit={handleNameSubmit} className="mb-4">
-          <input
-            type="text"
-            placeholder="Enter your name"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="border rounded px-2 py-1 text-sm"
-          />
-          <button
-            type="submit"
-            className="ml-2 px-2 py-1 bg-emerald-500 text-white rounded text-sm hover:bg-emerald-600"
-          >
-            Join
-          </button>
-        </form>
-      ) : (
-        <p className="mb-4 text-sm text-gray-700">You are logged in as: <strong>{username}</strong></p>
-      )}
-
-      <div className="overflow-x-auto">
-        <table className="border-collapse">
-          <thead>
-            <tr>
-              <th className="border px-2 py-1 text-xs">Time</th>
-              {days.map((day) => {
-                const key = day.toISOString().split("T")[0];
+      <div className="overflow-x-auto max-w-[90vw]">
+        <h2 className="text-lg font-semibold mb-2">Group's Availability</h2>
+        <div
+          className="grid border border-gray-300 rounded-md"
+          style={{ gridTemplateColumns: `80px repeat(${dates.length}, minmax(56px,1fr))` }}
+        >
+          <div className="bg-white border border-gray-200 p-1"></div>
+          {dates.map((d, idx) => (
+            <div key={idx} className="text-center border border-gray-200 p-1">
+              <div className="text-xs">{d.label}</div>
+              <div className="text-sm font-semibold">{d.day}</div>
+            </div>
+          ))}
+          {times.map((time, r) => (
+            <>
+              <div
+                key={time.key}
+                className="flex items-center justify-end pr-1 text-[10px] border border-gray-200 font-medium bg-gray-50"
+                style={{ height: "22px" }}
+              >
+                {time.label}
+              </div>
+              {dates.map((_, c) => {
+                const count = availabilityCount[r][c];
                 return (
-                  <th key={key} className="border px-2 py-1 text-xs">
-                    {day.toDateString()}
-                  </th>
+                  <div
+                    key={time.key + c}
+                    className={`w-14 border border-gray-200 ${heatmapColor(count)}`}
+                    style={{ height: "22px" }}
+                  ></div>
                 );
               })}
-            </tr>
-          </thead>
-          <tbody>
-            {times.map((t) => (
-              <tr key={t.key}>
-                <td className="border px-2 py-1 text-xs">{t.label}</td>
-                {days.map((day) => {
-                  const dayKey = day.toISOString().split("T")[0];
-                  const cellKey = `${dayKey}-${t.key}`;
-                  const count = Object.values(participants).filter(
-                    (p) => p && p[cellKey]
-                  ).length;
-                  const isSelected =
-                    username && participants[username] && participants[username][cellKey];
+            </>
+          ))}
+        </div>
+      </div>
 
-                  return (
-                    <td
-                      key={cellKey}
-                      onClick={() => toggleCell(dayKey, t.key)}
-                      className={`border w-12 h-6 cursor-pointer ${
-                        isSelected ? "bg-red-400" : count > 0 ? "bg-emerald-200" : "bg-green-100"
-                      }`}
-                    >
-                      {count > 0 ? count : ""}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="mt-8 w-64 text-center">
+        <h2 className="font-semibold mb-2">Participants</h2>
+        <ul className="space-y-1">
+          {participantKeys.map((u) => (
+            <li key={u}>{u}</li>
+          ))}
+        </ul>
+        <div className="mt-3">
+          <button
+            onClick={() => setRemoveMode(!removeMode)}
+            className="text-xs text-rose-600 hover:underline"
+          >
+            {removeMode ? "Cancel Remove Mode" : "Remove a Participant"}
+          </button>
+          {removeMode && (
+            <div className="mt-2 space-y-1">
+              {participantKeys.map((u) => (
+                <button
+                  key={u}
+                  onClick={() => removeUser(u)}
+                  className="block w-full text-xs text-rose-600 hover:bg-rose-50 border rounded px-1 py-0.5"
+                >
+                  ❌ {u}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
