@@ -1,16 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { db } from "./firebase";
-import { doc, setDoc, onSnapshot, updateDoc, deleteField } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, deleteField } from "firebase/firestore";
 
 function timeSlots(startTime, endTime) {
   const slots = [];
   const [sh, sm] = startTime.split(":").map(Number);
   const [eh, em] = endTime.split(":").map(Number);
-
   let cur = new Date(0, 0, 0, sh, sm);
   const end = new Date(0, 0, 0, eh, em);
-
   while (cur <= end) {
     const h = cur.getHours();
     const m = cur.getMinutes();
@@ -41,13 +39,7 @@ export default function EventPage() {
   const [meta, setMeta] = useState(null);
   const [participants, setParticipants] = useState({});
   const [name, setName] = useState(localStorage.getItem("username") || "");
-  const [hoverInfo, setHoverInfo] = useState(null);
   const [removeMode, setRemoveMode] = useState(false);
-
-  const isDragging = useRef(false);
-  const dragValue = useRef(null);
-
-  const normalizeName = (raw) => raw.trim().toLowerCase();
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "events", eventId), (docSnap) => {
@@ -60,19 +52,21 @@ export default function EventPage() {
     return () => unsub();
   }, [eventId]);
 
-  const toggleCell = async (r, c) => {
+  const toggleCell = async (dayKey, timeKey) => {
     if (!name) return;
-    const key = normalizeName(name);
-    const userData = participants[key] || {};
-    const cellKey = `r${r}_c${c}`;
+    const userKey = name.trim().toLowerCase();
+    const userData = participants[userKey] || {};
+    const cellKey = `${dayKey}-${timeKey}`;
     const updated = { ...userData, [cellKey]: !userData[cellKey] };
-    await updateDoc(doc(db, "events", eventId), { [`participants.${key}`]: updated });
+    await updateDoc(doc(db, "events", eventId), {
+      [`participants.${userKey}`]: updated,
+    });
   };
 
   const removeUser = async (userKey) => {
     if (!window.confirm(`Remove ${userKey}?`)) return;
     await updateDoc(doc(db, "events", eventId), { [`participants.${userKey}`]: deleteField() });
-    if (normalizeName(name) === userKey) {
+    if (name.trim().toLowerCase() === userKey) {
       setName("");
       localStorage.removeItem("username");
     }
@@ -82,7 +76,6 @@ export default function EventPage() {
 
   const times = timeSlots(meta.startTime, meta.endTime);
   const dates = dateRange(meta.startDate, meta.endDate);
-
   const participantKeys = Object.keys(participants || {});
   const totalUsers = participantKeys.length;
 
@@ -90,8 +83,8 @@ export default function EventPage() {
   participantKeys.forEach((u) => {
     const obj = participants[u];
     times.forEach((_, r) => {
-      dates.forEach((_, c) => {
-        if (obj[`r${r}_c${c}`] === false) {
+      dates.forEach((d, c) => {
+        if (obj[`${d.iso}-${times[r].key}`]) {
           availabilityCount[r][c] += 1;
         }
       });
@@ -110,26 +103,8 @@ export default function EventPage() {
   };
 
   return (
-    <div className="flex flex-col items-center p-4 select-none">
-      <h1 className="text-3xl font-bold text-emerald-700 mb-2">{meta.title}</h1>
-      <div className="flex items-center gap-3 mb-4">
-        <p className="text-sm text-gray-500">Share this link: {window.location.href}</p>
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(window.location.href);
-            alert("Link copied!");
-          }}
-          className="px-2 py-1 bg-gray-200 rounded text-xs hover:bg-gray-300"
-        >
-          Copy Link
-        </button>
-        <button
-          onClick={() => (window.location.href = "/")}
-          className="px-2 py-1 bg-emerald-500 text-white rounded text-xs hover:bg-emerald-600"
-        >
-          + New Event
-        </button>
-      </div>
+    <div className="p-6 flex flex-col items-center">
+      <h1 className="text-2xl font-bold text-emerald-700 mb-4">{meta.title}</h1>
 
       <div className="mb-4">
         <input
@@ -140,60 +115,62 @@ export default function EventPage() {
             localStorage.setItem("username", e.target.value);
           }}
           placeholder="Enter your name"
-          className="border rounded px-2 py-1"
+          className="border rounded px-2 py-1 text-sm"
         />
       </div>
 
-      <div className="overflow-x-auto max-w-[90vw]">
-        <h2 className="text-lg font-semibold mb-2">Group's Availability</h2>
-        <div
-          className="grid border border-gray-300 rounded-md"
-          style={{ gridTemplateColumns: `80px repeat(${dates.length}, minmax(56px,1fr))` }}
-        >
-          <div className="bg-white border border-gray-200 p-1"></div>
-          {dates.map((d, idx) => (
-            <div key={idx} className="text-center border border-gray-200 p-1">
-              <div className="text-xs">{d.label}</div>
-              <div className="text-sm font-semibold">{d.day}</div>
-            </div>
-          ))}
-          {times.map((time, r) => (
-            <>
-              <div
-                key={time.key}
-                className="flex items-center justify-end pr-1 text-[10px] border border-gray-200 font-medium bg-gray-50"
-                style={{ height: "22px" }}
-              >
-                {time.label}
-              </div>
-              {dates.map((_, c) => {
-                const count = availabilityCount[r][c];
-                return (
-                  <div
-                    key={time.key + c}
-                    className={`w-14 border border-gray-200 ${heatmapColor(count)}`}
-                    style={{ height: "22px" }}
-                  ></div>
-                );
-              })}
-            </>
-          ))}
-        </div>
+      <div className="overflow-x-auto border border-gray-300 rounded">
+        <table className="border-collapse">
+          <thead>
+            <tr>
+              <th className="border px-2 py-1 text-xs">Time</th>
+              {dates.map((d) => (
+                <th key={d.iso} className="border px-2 py-1 text-xs">
+                  {d.label}<br /><span className="font-semibold">{d.day}</span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {times.map((t, r) => (
+              <tr key={t.key}>
+                <td className="border px-2 py-1 text-xs">{t.label}</td>
+                {dates.map((d, c) => {
+                  const cellKey = `${d.iso}-${t.key}`;
+                  const count = availabilityCount[r][c];
+                  const isSelected =
+                    name && participants[name.trim().toLowerCase()]?.[cellKey];
+                  return (
+                    <td
+                      key={cellKey}
+                      onClick={() => toggleCell(d.iso, t.key)}
+                      className={`border w-12 h-6 cursor-pointer text-xs text-center ${
+                        isSelected ? "bg-red-400" : heatmapColor(count)
+                      }`}
+                    >
+                      {count > 0 ? count : ""}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      <div className="mt-8 w-64 text-center">
+      <div className="mt-6 text-center">
         <h2 className="font-semibold mb-2">Participants</h2>
-        <ul className="space-y-1">
+        <ul className="text-sm space-y-1">
           {participantKeys.map((u) => (
             <li key={u}>{u}</li>
           ))}
         </ul>
-        <div className="mt-3">
+        <div className="mt-2">
           <button
             onClick={() => setRemoveMode(!removeMode)}
             className="text-xs text-rose-600 hover:underline"
           >
-            {removeMode ? "Cancel Remove Mode" : "Remove a Participant"}
+            {removeMode ? "Cancel Remove" : "Remove a Participant"}
           </button>
           {removeMode && (
             <div className="mt-2 space-y-1">
