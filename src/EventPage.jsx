@@ -32,7 +32,7 @@ function timeSlots(startTime, endTime, timezone) {
   }
 
   return slots;
-}}}}}}
+}}}}}}}
 
 function dateRange(startDate, endDate) {
   const dates = [];
