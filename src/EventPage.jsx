@@ -9,25 +9,29 @@ import {
   deleteField,
 } from "firebase/firestore";
 
-function timeSlots(startTime, endTime) {
+function timeSlots(startTime, endTime, timezone) {
   const slots = [];
   const [sh, sm] = startTime.split(":").map(Number);
   const [eh, em] = endTime.split(":").map(Number);
 
-  let cur = new Date(0, 0, 0, sh, sm);
-  const end = new Date(0, 0, 0, eh, em);
+  let cur = new Date(Date.UTC(1970, 0, 1, sh, sm));
+  const end = new Date(Date.UTC(1970, 0, 1, eh, em));
 
   while (cur <= end) {
-    const h = cur.getHours();
-    const m = cur.getMinutes();
-    const label = `${(h % 12) || 12}:${m.toString().padStart(2, "0")} ${
-      h < 12 ? "AM" : "PM"
-    }`;
+    const label = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: timezone || "UTC",
+    }).format(cur);
+
+    const h = cur.getUTCHours();
+    const m = cur.getUTCMinutes();
     slots.push({ label, key: `${h}:${m.toString().padStart(2, "0")}` });
-    cur.setMinutes(cur.getMinutes() + 15);
+    cur.setUTCMinutes(cur.getUTCMinutes() + 15);
   }
   return slots;
-}
+}}
 
 function dateRange(startDate, endDate) {
   const dates = [];
@@ -164,7 +168,7 @@ export default function EventPage() {
 
   if (!meta) return <div className="p-4 text-center">Loading...</div>;
 
-  const times = timeSlots(meta.startTime, meta.endTime);
+  const times = timeSlots(meta.startTime, meta.endTime, meta.timezone || "UTC");
   const dates = dateRange(meta.startDate, meta.endDate);
 
   const participantKeys = Object.keys(participants || {});

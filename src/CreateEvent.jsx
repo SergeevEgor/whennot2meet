@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { db } from "./firebase";
 import { doc, setDoc } from "firebase/firestore";
@@ -10,6 +11,7 @@ export default function CreateEvent() {
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("21:00");
   const navigate = useNavigate();
+  const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   const createEvent = async (e) => {
     e.preventDefault();
@@ -50,7 +52,20 @@ export default function CreateEvent() {
               required
               className="w-full border border-gray-300 rounded-md px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
             />
-          </div>
+          {/* Timezone */}
+          <div>
+            <label className="text-base font-medium text-gray-700 block mb-2">Timezone</label>
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            >
+              {Intl.supportedValuesOf("timeZone").map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+          </div>          </div>
 
           {/* Date range */}
           <div>
@@ -70,8 +85,34 @@ export default function CreateEvent() {
                 required
                 className="flex-1 border border-gray-300 rounded-md px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
               />
-            </div>
-          </div>
+          {/* Timezone */}
+          <div>
+            <label className="text-base font-medium text-gray-700 block mb-2">Timezone</label>
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            >
+              {Intl.supportedValuesOf("timeZone").map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+          </div>            </div>
+          {/* Timezone */}
+          <div>
+            <label className="text-base font-medium text-gray-700 block mb-2">Timezone</label>
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            >
+              {Intl.supportedValuesOf("timeZone").map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+          </div>          </div>
 
           {/* Time range */}
           <div>
@@ -91,8 +132,34 @@ export default function CreateEvent() {
                 required
                 className="flex-1 border border-gray-300 rounded-md px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
               />
-            </div>
-          </div>
+          {/* Timezone */}
+          <div>
+            <label className="text-base font-medium text-gray-700 block mb-2">Timezone</label>
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            >
+              {Intl.supportedValuesOf("timeZone").map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+          </div>            </div>
+          {/* Timezone */}
+          <div>
+            <label className="text-base font-medium text-gray-700 block mb-2">Timezone</label>
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            >
+              {Intl.supportedValuesOf("timeZone").map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+          </div>          </div>
 
           {/* Submit */}
           <button
@@ -102,7 +169,33 @@ export default function CreateEvent() {
             Create Event
           </button>
         </form>
-      </div>
-    </div>
+          {/* Timezone */}
+          <div>
+            <label className="text-base font-medium text-gray-700 block mb-2">Timezone</label>
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            >
+              {Intl.supportedValuesOf("timeZone").map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+          </div>      </div>
+          {/* Timezone */}
+          <div>
+            <label className="text-base font-medium text-gray-700 block mb-2">Timezone</label>
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            >
+              {Intl.supportedValuesOf("timeZone").map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+          </div>    </div>
   );
 }
