@@ -22,7 +22,7 @@ function timeSlots(startTime, endTime, timezone) {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
-      timeZone: timezone || "UTC",
+      timeZone: timezone,
     }).format(cur);
 
     const h = cur.getUTCHours();
@@ -31,7 +31,7 @@ function timeSlots(startTime, endTime, timezone) {
     cur.setUTCMinutes(cur.getUTCMinutes() + 15);
   }
   return slots;
-}}
+}}}
 
 function dateRange(startDate, endDate) {
   const dates = [];
@@ -60,7 +60,9 @@ export default function EventPage() {
   const [name, setName] = useState(localStorage.getItem("username") || "");
   const [hoverInfo, setHoverInfo] = useState(null);
   const [removeMode, setRemoveMode] = useState(false);
-
+  const [userTimezone, setUserTimezone] = useState(
+    Intl.DateTimeFormat().resolvedOptions().timeZone
+  );
   const isDragging = useRef(false);
   const dragValue = useRef(null);
 
@@ -168,7 +170,7 @@ export default function EventPage() {
 
   if (!meta) return <div className="p-4 text-center">Loading...</div>;
 
-  const times = timeSlots(meta.startTime, meta.endTime, meta.timezone || "UTC");
+  const times = timeSlots(meta.startTime, meta.endTime, userTimezone);
   const dates = dateRange(meta.startDate, meta.endDate);
 
   const participantKeys = Object.keys(participants || {});
@@ -234,7 +236,18 @@ export default function EventPage() {
         />
       </div>
 
-      <div className="flex gap-8 w-full justify-center">
+      <div className="mb-4">
+        <label className="text-sm font-medium text-gray-700 mr-2">Your Timezone:</label>
+        <select
+          value={userTimezone}
+          onChange={(e) => setUserTimezone(e.target.value)}
+          className="border rounded px-2 py-1 text-sm"
+        >
+          {Intl.supportedValuesOf("timeZone").map((tz) => (
+            <option key={tz} value={tz}>{tz}</option>
+          ))}
+        </select>
+      </div>      <div className="flex gap-8 w-full justify-center">
         {name && (
           <>
             {/* Personal availability */}
