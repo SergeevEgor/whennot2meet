@@ -200,6 +200,21 @@ export default function EventPage() {
     <div className="flex flex-col items-center p-4 select-none" onMouseUp={handleMouseUp}>
       <h1 className="text-3xl font-bold text-emerald-700 mb-2">{meta.title}</h1>
       <p className="text-sm text-gray-500 mb-4">Share this link: {window.location.href}</p>
+<div className="flex items-center gap-3 mb-4">
+  <p className="text-sm text-gray-500">Share this link: {window.location.href}</p>
+  <button
+    onClick={() => { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }}
+    className="px-2 py-1 bg-gray-200 rounded text-xs hover:bg-gray-300"
+  >
+    Copy Link
+  </button>
+  <button
+    onClick={() => (window.location.href = "/")}
+    className="px-2 py-1 bg-emerald-500 text-white rounded text-xs hover:bg-emerald-600"
+  >
+    + New Event
+  </button>
+</div>
 
       {/* Name input */}
       <div className="mb-4">
