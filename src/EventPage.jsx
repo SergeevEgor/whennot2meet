@@ -49,16 +49,6 @@ export default function EventPage() {
 
   const normalizeName = (raw) => raw.trim().toLowerCase();
 
-  const gridToObject = (grid) => {
-    const obj = {};
-    grid.forEach((row, r) => {
-      row.forEach((cell, c) => {
-        obj[`r${r}_c${c}`] = cell;
-      });
-    });
-    return obj;
-  };
-
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "events", eventId), (docSnap) => {
       if (docSnap.exists()) {
