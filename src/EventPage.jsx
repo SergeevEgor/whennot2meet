@@ -30,8 +30,9 @@ function timeSlots(startTime, endTime, timezone) {
     slots.push({ label, key: `${h}:${m.toString().padStart(2, "0")}` });
     cur.setUTCMinutes(cur.getUTCMinutes() + 15);
   }
+
   return slots;
-}}}
+}}}}}}
 
 function dateRange(startDate, endDate) {
   const dates = [];
