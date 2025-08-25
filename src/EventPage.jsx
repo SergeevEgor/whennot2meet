@@ -264,9 +264,11 @@ function StickyGrid({ grid, toggleCell, handleMouseDown, handleMouseEnter, TIMES
             <div key={time.key} className="flex items-center justify-end pr-1 text-[10px] border border-gray-200 font-medium bg-gray-50 sticky left-0 z-10" style={{ height: "22px" }}>{time.label}</div>
             {DAYS.map((_, c) => (
               <div key={time.key + c}
-                className={`w-14 border border-gray-200 cursor-pointer transition-colors duration-150 ${grid[r][c] ? "bg-rose-300 hover:bg-rose-400" : "bg-emerald-50 hover:bg-emerald-100"}`}
+                className={`w-14 border border-gray-200 cursor-pointer transition-colors duration-150 ${
+                  grid[r][c] ? "bg-rose-300 hover:bg-rose-400" : "bg-emerald-50 hover:bg-emerald-100"
+                }`}
                 style={{ height: "22px" }}
-                // Desktop single click
+                // Desktop click
                 onMouseDown={() => toggleCell(r, c)}
                 // Desktop drag
                 onMouseEnter={() => handleMouseEnter(r, c)}
