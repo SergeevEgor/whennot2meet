@@ -162,7 +162,7 @@ export default function EventPage() {
     }
   };
 
-  if (!meta) return <div className="p-4 text-center">Loading...</div>;
+  if (!meta) return <div className="p-2 sm:p-4 text-center">Loading...</div>;
 
   const times = timeSlots(meta.startTime, meta.endTime);
   const dates = dateRange(meta.startDate, meta.endDate);
@@ -197,9 +197,9 @@ export default function EventPage() {
   };
 
   return (
-    <div className="flex flex-col items-center p-4 select-none" onMouseUp={handleMouseUp}>
+    <div className="flex flex-col items-center p-2 sm:p-4 select-none" onMouseUp={handleMouseUp}>
       <h1 className="text-3xl font-bold text-emerald-700 mb-2">{meta.title}</h1>
-<div className="flex items-center gap-3 mb-4">
+<div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 mb-4 text-center">
   <p className="text-sm text-gray-500">Share this link: {window.location.href}</p>
   <button
     onClick={() => { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }}
@@ -233,7 +233,7 @@ export default function EventPage() {
         {name && (
           <>
             {/* Personal availability */}
-            <div className="overflow-x-auto max-w-[90vw]">
+            <div className="overflow-x-auto max-w-full sm:max-w-[90vw] touch-pan-x">
               <h2 className="text-lg font-semibold mb-2">{name}'s Availability</h2>
               <Grid
                 grid={grid}
@@ -246,7 +246,7 @@ export default function EventPage() {
             </div>
 
             {/* Group availability */}
-            <div className="overflow-x-auto max-w-[90vw]">
+            <div className="overflow-x-auto max-w-full sm:max-w-[90vw] touch-pan-x">
               <h2 className="text-lg font-semibold mb-2">Group's Availability</h2>
               <div
                 className="grid border border-gray-300 rounded-md"
@@ -300,7 +300,7 @@ export default function EventPage() {
             </div>
 
             {/* Hover details */}
-            <div className="w-56 border rounded p-2 bg-gray-50">
+            <div className="w-full sm:w-56 border rounded p-2 bg-gray-50">
               <h2 className="text-sm font-semibold mb-1">Details</h2>
               {hoverInfo ? (
                 <>
