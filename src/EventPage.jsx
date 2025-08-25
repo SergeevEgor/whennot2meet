@@ -189,7 +189,22 @@ export default function EventPage() {
         <input type="text" value={name} onChange={(e) => { setName(e.target.value); localStorage.setItem("username", e.target.value); }} placeholder="Enter your name" className="border rounded px-2 py-1 w-full" />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-6 w-full justify-center">
+      {/* MOBILE tabs */}
+      <div className="sm:hidden w-full">
+        <div className="flex gap-2 mb-4">
+          <button onClick={() => setTab("personal")} className={`flex-1 py-2 rounded ${tab === "personal" ? "bg-emerald-500 text-white" : "bg-gray-200 text-gray-700"}`}>My Availability</button>
+          <button onClick={() => setTab("group")} className={`flex-1 py-2 rounded ${tab === "group" ? "bg-emerald-500 text-white" : "bg-gray-200 text-gray-700"}`}>Group</button>
+        </div>
+        {name && tab === "personal" && (
+          <StickyGrid grid={grid} toggleCell={toggleCell} handleMouseDown={handleMouseDown} handleMouseEnter={handleMouseEnter} TIMES={times} DAYS={dates} />
+        )}
+        {tab === "group" && (
+          <StickyGroupGrid TIMES={times} DAYS={dates} participants={participants} participantKeys={participantKeys} availabilityCount={availabilityCount} setHoverInfo={setHoverInfo} heatmapColor={heatmapColor} />
+        )}
+      </div>
+
+      {/* DESKTOP side-by-side */}
+      <div className="hidden sm:flex gap-8 w-full justify-center">
         {name && (
           <StickyGrid grid={grid} toggleCell={toggleCell} handleMouseDown={handleMouseDown} handleMouseEnter={handleMouseEnter} TIMES={times} DAYS={dates} />
         )}
@@ -249,11 +264,7 @@ function StickyGrid({ grid, toggleCell, handleMouseDown, handleMouseEnter, TIMES
             <div key={time.key} className="flex items-center justify-end pr-1 text-[10px] border border-gray-200 font-medium bg-gray-50 sticky left-0 z-10" style={{ height: "22px" }}>{time.label}</div>
             {DAYS.map((_, c) => (
               <div key={time.key + c}
-                className={`w-14 border border-gray-200 cursor-pointer transition-colors duration-150 ${
-                  grid[r][c]
-                    ? "bg-rose-300 hover:bg-rose-400"
-                    : "bg-emerald-50 hover:bg-emerald-100"
-                }`}
+                className={`w-14 border border-gray-200 cursor-pointer transition-colors duration-150 ${grid[r][c] ? "bg-rose-300 hover:bg-rose-400" : "bg-emerald-50 hover:bg-emerald-100"}`}
                 style={{ height: "22px" }}
                 // Desktop single click
                 onMouseDown={() => toggleCell(r, c)}
