@@ -56,7 +56,6 @@ export default function EventPage() {
   const [name, setName] = useState(localStorage.getItem("username") || "");
   const [hoverInfo, setHoverInfo] = useState(null);
   const [removeMode, setRemoveMode] = useState(false);
-  const [tab, setTab] = useState("personal");
 
   const isDragging = useRef(false);
   const dragValue = useRef(null);
@@ -205,10 +204,8 @@ export default function EventPage() {
         <input type="text" value={name} onChange={(e) => { setName(e.target.value); localStorage.setItem("username", e.target.value); }} placeholder="Enter your name" className="border rounded px-2 py-1 w-full" />
       </div>
 
-      {/* Group Grid always updates hoverInfo */}
       <StickyGroupGrid TIMES={times} DAYS={dates} participants={participants} participantKeys={participantKeys} availabilityCount={availabilityCount} setHoverInfo={setHoverInfo} heatmapColor={heatmapColor} />
 
-      {/* Details */}
       <div className="w-full sm:w-64 border rounded p-2 bg-gray-50 mt-4 z-50 relative">
         <h2 className="text-sm font-semibold mb-1">Details</h2>
         {hoverInfo ? (
@@ -222,7 +219,6 @@ export default function EventPage() {
         )}
       </div>
 
-      {/* Participants */}
       <div className="mt-8 w-full sm:w-64 text-center z-50 relative">
         <h2 className="font-semibold mb-2">Participants</h2>
         <ul className="space-y-1">
