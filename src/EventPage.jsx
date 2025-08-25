@@ -9,6 +9,7 @@ import {
   deleteField,
 } from "firebase/firestore";
 
+// Utility: build time slots
 function timeSlots(startTime, endTime) {
   const slots = [];
   const [sh, sm] = startTime.split(":").map(Number);
@@ -29,6 +30,7 @@ function timeSlots(startTime, endTime) {
   return slots;
 }
 
+// Utility: build date range
 function dateRange(startDate, endDate) {
   const dates = [];
   let cur = new Date(startDate);
@@ -56,6 +58,7 @@ export default function EventPage() {
   const [name, setName] = useState(localStorage.getItem("username") || "");
   const [hoverInfo, setHoverInfo] = useState(null);
   const [removeMode, setRemoveMode] = useState(false);
+  const [tab, setTab] = useState("personal"); // mobile tab switcher
 
   const isDragging = useRef(false);
   const dragValue = useRef(null);
@@ -84,6 +87,7 @@ export default function EventPage() {
     return obj;
   };
 
+  // load event
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "events", eventId), (docSnap) => {
       if (docSnap.exists()) {
@@ -113,6 +117,7 @@ export default function EventPage() {
     return () => unsub();
   }, [name, eventId]);
 
+  // save grid
   const saveGrid = (newGrid) => {
     if (!name || !meta) return;
     const key = normalizeName(name);
@@ -162,7 +167,7 @@ export default function EventPage() {
     }
   };
 
-  if (!meta) return <div className="p-2 sm:p-4 text-center">Loading...</div>;
+  if (!meta) return <div className="p-4 text-center">Loading...</div>;
 
   const times = timeSlots(meta.startTime, meta.endTime);
   const dates = dateRange(meta.startDate, meta.endDate);
@@ -197,26 +202,38 @@ export default function EventPage() {
   };
 
   return (
-    <div className="flex flex-col items-center p-2 sm:p-4 select-none" onMouseUp={handleMouseUp}>
-      <h1 className="text-3xl font-bold text-emerald-700 mb-2">{meta.title}</h1>
-<div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 mb-4 text-center">
-  <p className="text-sm text-gray-500">Share this link: {window.location.href}</p>
-  <button
-    onClick={() => { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }}
-    className="px-2 py-1 bg-gray-200 rounded text-xs hover:bg-gray-300"
-  >
-    Copy Link
-  </button>
-  <button
-    onClick={() => (window.location.href = "/")}
-    className="px-2 py-1 bg-emerald-500 text-white rounded text-xs hover:bg-emerald-600"
-  >
-    + New Event
-  </button>
-</div>
+    <div
+      className="flex flex-col items-center p-2 sm:p-4 select-none"
+      onMouseUp={handleMouseUp}
+    >
+      <h1 className="text-2xl sm:text-3xl font-bold text-emerald-700 mb-2">
+        {meta.title}
+      </h1>
+
+      {/* Share block */}
+      <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 mb-4 text-center">
+        <p className="text-xs sm:text-sm text-gray-500 break-all">
+          {window.location.href}
+        </p>
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(window.location.href);
+            alert("Link copied!");
+          }}
+          className="px-2 py-1 bg-gray-200 rounded text-xs hover:bg-gray-300"
+        >
+          Copy Link
+        </button>
+        <button
+          onClick={() => (window.location.href = "/")}
+          className="px-2 py-1 bg-emerald-500 text-white rounded text-xs hover:bg-emerald-600"
+        >
+          + New Event
+        </button>
+      </div>
 
       {/* Name input */}
-      <div className="mb-4">
+      <div className="mb-4 w-full max-w-sm">
         <input
           type="text"
           value={name}
@@ -225,16 +242,86 @@ export default function EventPage() {
             localStorage.setItem("username", e.target.value);
           }}
           placeholder="Enter your name"
-          className="border rounded px-2 py-1"
+          className="border rounded px-2 py-1 w-full"
         />
       </div>
 
-      <div className="flex gap-8 w-full justify-center">
+      {/* MOBILE: Tabs */}
+      <div className="sm:hidden w-full">
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setTab("personal")}
+            className={`flex-1 py-2 rounded ${
+              tab === "personal"
+                ? "bg-emerald-500 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            My Availability
+          </button>
+          <button
+            onClick={() => setTab("group")}
+            className={`flex-1 py-2 rounded ${
+              tab === "group"
+                ? "bg-emerald-500 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            Group
+          </button>
+        </div>
+        {name && tab === "personal" && (
+          <div className="overflow-x-auto">
+            <Grid
+              grid={grid}
+              toggleCell={toggleCell}
+              handleMouseDown={handleMouseDown}
+              handleMouseEnter={handleMouseEnter}
+              TIMES={times}
+              DAYS={dates}
+            />
+          </div>
+        )}
+        {tab === "group" && (
+          <div className="overflow-x-auto">
+            <GroupGrid
+              TIMES={times}
+              DAYS={dates}
+              participants={participants}
+              participantKeys={participantKeys}
+              availabilityCount={availabilityCount}
+              setHoverInfo={setHoverInfo}
+            />
+          </div>
+        )}
+        <div className="w-full border rounded p-2 bg-gray-50 mt-4">
+          <h2 className="text-sm font-semibold mb-1">Details</h2>
+          {hoverInfo ? (
+            <>
+              <p className="text-xs mb-1">
+                {hoverInfo.day} {hoverInfo.date} at {hoverInfo.time}
+              </p>
+              <p className="text-xs text-green-700">
+                ✅ Available: {hoverInfo.availableUsers.join(", ") || "None"}
+              </p>
+              <p className="text-xs text-rose-700">
+                ❌ Unavailable: {hoverInfo.unavailableUsers.join(", ") || "None"}
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-gray-500">Tap a cell to see details</p>
+          )}
+        </div>
+      </div>
+
+      {/* DESKTOP: side by side */}
+      <div className="hidden sm:flex gap-8 w-full justify-center">
         {name && (
           <>
-            {/* Personal availability */}
-            <div className="overflow-x-auto max-w-full sm:max-w-[90vw] touch-pan-x">
-              <h2 className="text-lg font-semibold mb-2">{name}'s Availability</h2>
+            <div className="overflow-x-auto max-w-[45vw]">
+              <h2 className="text-lg font-semibold mb-2">
+                {name}'s Availability
+              </h2>
               <Grid
                 grid={grid}
                 toggleCell={toggleCell}
@@ -244,63 +331,18 @@ export default function EventPage() {
                 DAYS={dates}
               />
             </div>
-
-            {/* Group availability */}
-            <div className="overflow-x-auto max-w-full sm:max-w-[90vw] touch-pan-x">
+            <div className="overflow-x-auto max-w-[45vw]">
               <h2 className="text-lg font-semibold mb-2">Group's Availability</h2>
-              <div
-                className="grid border border-gray-300 rounded-md"
-                style={{ gridTemplateColumns: `80px repeat(${dates.length}, minmax(56px,1fr))` }}
-              >
-                <div className="bg-white border border-gray-200 p-1"></div>
-                {dates.map((d, idx) => (
-                  <div key={idx} className="text-center border border-gray-200 p-1">
-                    <div className="text-xs">{d.label}</div>
-                    <div className="text-sm font-semibold">{d.day}</div>
-                  </div>
-                ))}
-                {times.map((time, r) => (
-                  <>
-                    <div
-                      key={time.key}
-                      className="flex items-center justify-end pr-1 text-[10px] border border-gray-200 font-medium bg-gray-50"
-                      style={{ height: "22px" }}
-                    >
-                      {time.label}
-                    </div>
-                    {dates.map((_, c) => {
-                      const count = availabilityCount[r][c];
-                      const availableUsers = participantKeys.filter(
-                        (u) => participants[u][`r${r}_c${c}`] === false
-                      );
-                      const unavailableUsers = participantKeys.filter(
-                        (u) => participants[u][`r${r}_c${c}`] === true
-                      );
-                      return (
-                        <div
-                          key={time.key + c}
-                          className={`w-14 border border-gray-200 ${heatmapColor(count)}`}
-                          style={{ height: "22px" }}
-                          onMouseEnter={() =>
-                            setHoverInfo({
-                              time: time.label,
-                              day: dates[c].day,
-                              date: dates[c].label,
-                              availableUsers,
-                              unavailableUsers,
-                            })
-                          }
-                          onMouseLeave={() => setHoverInfo(null)}
-                        ></div>
-                      );
-                    })}
-                  </>
-                ))}
-              </div>
+              <GroupGrid
+                TIMES={times}
+                DAYS={dates}
+                participants={participants}
+                participantKeys={participantKeys}
+                availabilityCount={availabilityCount}
+                setHoverInfo={setHoverInfo}
+              />
             </div>
-
-            {/* Hover details */}
-            <div className="w-full sm:w-56 border rounded p-2 bg-gray-50">
+            <div className="w-56 border rounded p-2 bg-gray-50">
               <h2 className="text-sm font-semibold mb-1">Details</h2>
               {hoverInfo ? (
                 <>
@@ -315,7 +357,9 @@ export default function EventPage() {
                   </p>
                 </>
               ) : (
-                <p className="text-xs text-gray-500">Hover a cell to see details</p>
+                <p className="text-xs text-gray-500">
+                  Hover a cell to see details
+                </p>
               )}
             </div>
           </>
@@ -323,7 +367,7 @@ export default function EventPage() {
       </div>
 
       {/* Participants list */}
-      <div className="mt-8 w-64 text-center">
+      <div className="mt-8 w-full sm:w-64 text-center">
         <h2 className="font-semibold mb-2">Participants</h2>
         <ul className="space-y-1">
           {participantKeys.map((u) => (
@@ -391,6 +435,67 @@ function Grid({ grid, toggleCell, handleMouseDown, handleMouseEnter, TIMES, DAYS
               onMouseEnter={() => handleMouseEnter(r, c)}
             ></div>
           ))}
+        </>
+      ))}
+    </div>
+  );
+}
+
+function GroupGrid({
+  TIMES,
+  DAYS,
+  participants,
+  participantKeys,
+  availabilityCount,
+  setHoverInfo,
+}) {
+  return (
+    <div
+      className="grid border border-gray-300 rounded-md"
+      style={{ gridTemplateColumns: `80px repeat(${DAYS.length}, minmax(56px,1fr))` }}
+    >
+      <div className="bg-white border border-gray-200 p-1"></div>
+      {DAYS.map((d, idx) => (
+        <div key={idx} className="text-center border border-gray-200 p-1">
+          <div className="text-xs">{d.label}</div>
+          <div className="text-sm font-semibold">{d.day}</div>
+        </div>
+      ))}
+      {TIMES.map((time, r) => (
+        <>
+          <div
+            key={time.key}
+            className="flex items-center justify-end pr-1 text-[10px] border border-gray-200 font-medium bg-gray-50"
+            style={{ height: "22px" }}
+          >
+            {time.label}
+          </div>
+          {DAYS.map((_, c) => {
+            const count = availabilityCount[r][c];
+            const availableUsers = participantKeys.filter(
+              (u) => participants[u][`r${r}_c${c}`] === false
+            );
+            const unavailableUsers = participantKeys.filter(
+              (u) => participants[u][`r${r}_c${c}`] === true
+            );
+            return (
+              <div
+                key={time.key + c}
+                className={`w-14 border border-gray-200 ${count === 0 ? "bg-rose-100" : "bg-emerald-300"}`}
+                style={{ height: "22px" }}
+                onMouseEnter={() =>
+                  setHoverInfo({
+                    time: time.label,
+                    day: DAYS[c].day,
+                    date: DAYS[c].label,
+                    availableUsers,
+                    unavailableUsers,
+                  })
+                }
+                onMouseLeave={() => setHoverInfo(null)}
+              ></div>
+            );
+          })}
         </>
       ))}
     </div>
