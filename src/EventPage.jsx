@@ -98,10 +98,10 @@ export default function EventPage() {
     setDoc(doc(db, "events", eventId), { participants: { ...participants, [key]: gridToObject(newGrid) } }, { merge: true });
   };
 
-  const toggleCell = (r, c) => {
+  const toggleCell = (r, c, value = null) => {
     setGrid((prev) => {
       const newGrid = prev.map((row) => [...row]);
-      newGrid[r][c] = !newGrid[r][c];
+      newGrid[r][c] = value !== null ? value : !newGrid[r][c];
       saveGrid(newGrid);
       return newGrid;
     });
@@ -111,17 +111,12 @@ export default function EventPage() {
     if (!name) return;
     isDragging.current = true;
     dragValue.current = !grid[r][c];
-    toggleCell(r, c);
+    toggleCell(r, c, dragValue.current);
   };
 
   const handleMouseEnter = (r, c) => {
     if (isDragging.current) {
-      setGrid((prev) => {
-        const newGrid = prev.map((row) => [...row]);
-        newGrid[r][c] = dragValue.current;
-        saveGrid(newGrid);
-        return newGrid;
-      });
+      toggleCell(r, c, dragValue.current);
     }
   };
 
@@ -196,7 +191,7 @@ export default function EventPage() {
           <button onClick={() => setTab("group")} className={`flex-1 py-2 rounded ${tab === "group" ? "bg-emerald-500 text-white" : "bg-gray-200 text-gray-700"}`}>Group</button>
         </div>
         {name && tab === "personal" && (
-          <StickyGrid grid={grid} toggleCell={toggleCell} handleMouseDown={handleMouseDown} handleMouseEnter={handleMouseEnter} TIMES={times} DAYS={dates} />
+          <StickyGrid grid={grid} toggleCell={toggleCell} TIMES={times} DAYS={dates} isDragging={isDragging} dragValue={dragValue} />
         )}
         {tab === "group" && (
           <StickyGroupGrid TIMES={times} DAYS={dates} participants={participants} participantKeys={participantKeys} availabilityCount={availabilityCount} setHoverInfo={setHoverInfo} heatmapColor={heatmapColor} />
@@ -206,7 +201,7 @@ export default function EventPage() {
       {/* DESKTOP side-by-side */}
       <div className="hidden sm:flex gap-8 w-full justify-center">
         {name && (
-          <StickyGrid grid={grid} toggleCell={toggleCell} handleMouseDown={handleMouseDown} handleMouseEnter={handleMouseEnter} TIMES={times} DAYS={dates} />
+          <StickyGrid grid={grid} toggleCell={toggleCell} TIMES={times} DAYS={dates} isDragging={isDragging} dragValue={dragValue} />
         )}
         <StickyGroupGrid TIMES={times} DAYS={dates} participants={participants} participantKeys={participantKeys} availabilityCount={availabilityCount} setHoverInfo={setHoverInfo} heatmapColor={heatmapColor} />
       </div>
@@ -248,7 +243,7 @@ export default function EventPage() {
   );
 }
 
-function StickyGrid({ grid, toggleCell, handleMouseDown, handleMouseEnter, TIMES, DAYS }) {
+function StickyGrid({ grid, toggleCell, TIMES, DAYS, isDragging, dragValue }) {
   return (
     <div className="overflow-auto max-h-[70vh]">
       <div className="grid border border-gray-300 rounded-md" style={{ gridTemplateColumns: `80px repeat(${DAYS.length}, minmax(56px,1fr))` }}>
@@ -263,17 +258,21 @@ function StickyGrid({ grid, toggleCell, handleMouseDown, handleMouseEnter, TIMES
           <>
             <div key={time.key} className="flex items-center justify-end pr-1 text-[10px] border border-gray-200 font-medium bg-gray-50 sticky left-0 z-10" style={{ height: "22px" }}>{time.label}</div>
             {DAYS.map((_, c) => (
-              <div key={time.key + c}
+              <div
+                key={time.key + c}
                 className={`w-14 border border-gray-200 cursor-pointer transition-colors duration-150 ${
                   grid[r][c] ? "bg-rose-300 hover:bg-rose-400" : "bg-emerald-50 hover:bg-emerald-100"
                 }`}
                 style={{ height: "22px" }}
-                // Desktop click
-                onMouseDown={() => toggleCell(r, c)}
-                // Desktop drag
-                onMouseEnter={() => handleMouseEnter(r, c)}
-                // Mobile tap
-                onClick={() => toggleCell(r, c)}
+                onClick={() => toggleCell(r, c)} // desktop click + mobile tap
+                onMouseDown={() => {
+                  dragValue.current = !grid[r][c];
+                  toggleCell(r, c, dragValue.current);
+                  isDragging.current = true;
+                }}
+                onMouseEnter={() => {
+                  if (isDragging.current) toggleCell(r, c, dragValue.current);
+                }}
               ></div>
             ))}
           </>
