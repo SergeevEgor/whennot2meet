@@ -408,9 +408,13 @@ function Grid({ grid, toggleCell, handleMouseDown, handleMouseEnter, TIMES, DAYS
       className="grid border border-gray-300 rounded-md"
       style={{ gridTemplateColumns: `80px repeat(${DAYS.length}, minmax(56px,1fr))` }}
     >
-      <div className="bg-white border border-gray-200 p-1"></div>
+      {/* top-left cell */}
+      <div className="bg-white border border-gray-200 p-1 sticky top-0 left-0 z-20"></div>
       {DAYS.map((d, idx) => (
-        <div key={idx} className="text-center border border-gray-200 p-1">
+        <div
+          key={idx}
+          className="text-center border border-gray-200 p-1 bg-white sticky top-0 z-10"
+        >
           <div className="text-xs">{d.label}</div>
           <div className="text-sm font-semibold">{d.day}</div>
         </div>
@@ -419,7 +423,7 @@ function Grid({ grid, toggleCell, handleMouseDown, handleMouseEnter, TIMES, DAYS
         <>
           <div
             key={time.key}
-            className="flex items-center justify-end pr-1 text-[10px] border border-gray-200 font-medium bg-gray-50"
+            className="flex items-center justify-end pr-1 text-[10px] border border-gray-200 font-medium bg-gray-50 sticky left-0 z-10"
             style={{ height: "22px" }}
           >
             {time.label}
@@ -457,9 +461,13 @@ function GroupGrid({
       className="grid border border-gray-300 rounded-md"
       style={{ gridTemplateColumns: `80px repeat(${DAYS.length}, minmax(56px,1fr))` }}
     >
-      <div className="bg-white border border-gray-200 p-1"></div>
+      {/* top-left cell */}
+      <div className="bg-white border border-gray-200 p-1 sticky top-0 left-0 z-20"></div>
       {DAYS.map((d, idx) => (
-        <div key={idx} className="text-center border border-gray-200 p-1">
+        <div
+          key={idx}
+          className="text-center border border-gray-200 p-1 bg-white sticky top-0 z-10"
+        >
           <div className="text-xs">{d.label}</div>
           <div className="text-sm font-semibold">{d.day}</div>
         </div>
@@ -468,7 +476,7 @@ function GroupGrid({
         <>
           <div
             key={time.key}
-            className="flex items-center justify-end pr-1 text-[10px] border border-gray-200 font-medium bg-gray-50"
+            className="flex items-center justify-end pr-1 text-[10px] border border-gray-200 font-medium bg-gray-50 sticky left-0 z-10"
             style={{ height: "22px" }}
           >
             {time.label}
@@ -513,3 +521,4 @@ function GroupGrid({
     </div>
   );
 }
+
