@@ -204,21 +204,31 @@ export default function EventPage() {
         <input type="text" value={name} onChange={(e) => { setName(e.target.value); localStorage.setItem("username", e.target.value); }} placeholder="Enter your name" className="border rounded px-2 py-1 w-full" />
       </div>
 
-      <StickyGroupGrid TIMES={times} DAYS={dates} participants={participants} participantKeys={participantKeys} availabilityCount={availabilityCount} setHoverInfo={setHoverInfo} heatmapColor={heatmapColor} />
-
-      <div className="w-full sm:w-64 border rounded p-2 bg-gray-50 mt-4 z-50 relative">
-        <h2 className="text-sm font-semibold mb-1">Details</h2>
-        {hoverInfo ? (
-          <>
-            <p className="text-xs mb-1">{hoverInfo.day} {hoverInfo.date} at {hoverInfo.time}</p>
-            <p className="text-xs text-green-700">✅ Available: {hoverInfo.availableUsers.join(", ") || "None"}</p>
-            <p className="text-xs text-rose-700">❌ Unavailable: {hoverInfo.unavailableUsers.join(", ") || "None"}</p>
-          </>
-        ) : (
-          <p className="text-xs text-gray-500">Hover or tap a cell to see details</p>
+      <div className="flex flex-col sm:flex-row gap-6 w-full justify-center">
+        {/* Personal availability grid */}
+        {name && (
+          <StickyGrid grid={grid} toggleCell={toggleCell} handleMouseDown={handleMouseDown} handleMouseEnter={handleMouseEnter} TIMES={times} DAYS={dates} />
         )}
+
+        {/* Group availability grid */}
+        <StickyGroupGrid TIMES={times} DAYS={dates} participants={participants} participantKeys={participantKeys} availabilityCount={availabilityCount} setHoverInfo={setHoverInfo} heatmapColor={heatmapColor} />
+
+        {/* Details */}
+        <div className="w-full sm:w-64 border rounded p-2 bg-gray-50 mt-4 sm:mt-0 z-50 relative">
+          <h2 className="text-sm font-semibold mb-1">Details</h2>
+          {hoverInfo ? (
+            <>
+              <p className="text-xs mb-1">{hoverInfo.day} {hoverInfo.date} at {hoverInfo.time}</p>
+              <p className="text-xs text-green-700">✅ Available: {hoverInfo.availableUsers.join(", ") || "None"}</p>
+              <p className="text-xs text-rose-700">❌ Unavailable: {hoverInfo.unavailableUsers.join(", ") || "None"}</p>
+            </>
+          ) : (
+            <p className="text-xs text-gray-500">Hover or tap a cell to see details</p>
+          )}
+        </div>
       </div>
 
+      {/* Participants */}
       <div className="mt-8 w-full sm:w-64 text-center z-50 relative">
         <h2 className="font-semibold mb-2">Participants</h2>
         <ul className="space-y-1">
@@ -240,6 +250,33 @@ export default function EventPage() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function StickyGrid({ grid, toggleCell, handleMouseDown, handleMouseEnter, TIMES, DAYS }) {
+  return (
+    <div className="overflow-auto max-h-[70vh]">
+      <div className="grid border border-gray-300 rounded-md" style={{ gridTemplateColumns: `80px repeat(${DAYS.length}, minmax(56px,1fr))` }}>
+        <div className="bg-white border border-gray-200 p-1 sticky top-0 left-0 z-30"></div>
+        {DAYS.map((d, idx) => (
+          <div key={idx} className="text-center border border-gray-200 p-1 bg-white sticky top-0 z-20">
+            <div className="text-xs">{d.label}</div>
+            <div className="text-sm font-semibold">{d.day}</div>
+          </div>
+        ))}
+        {TIMES.map((time, r) => (
+          <>
+            <div key={time.key} className="flex items-center justify-end pr-1 text-[10px] border border-gray-200 font-medium bg-gray-50 sticky left-0 z-10" style={{ height: "22px" }}>{time.label}</div>
+            {DAYS.map((_, c) => (
+              <div key={time.key + c} className={`w-14 border border-gray-200 cursor-pointer transition-colors duration-150 ${grid[r][c] ? "bg-rose-300 hover:bg-rose-400" : "bg-emerald-50 hover:bg-emerald-100"}`} style={{ height: "22px" }}
+                onMouseDown={() => handleMouseDown(r, c)}
+                onMouseEnter={() => handleMouseEnter(r, c)}
+              ></div>
+            ))}
+          </>
+        ))}
       </div>
     </div>
   );
@@ -267,7 +304,8 @@ function StickyGroupGrid({ TIMES, DAYS, participants, participantKeys, availabil
                 <div key={time.key + c} className={`w-14 border border-gray-200 ${heatmapColor(count)}`} style={{ height: "22px" }}
                   onMouseEnter={() => setHoverInfo({ time: time.label, day: DAYS[c].day, date: DAYS[c].label, availableUsers, unavailableUsers })}
                   onMouseLeave={() => setHoverInfo(null)}
-                  onClick={() => setHoverInfo({ time: time.label, day: DAYS[c].day, date: DAYS[c].label, availableUsers, unavailableUsers })}></div>
+                  onClick={() => setHoverInfo({ time: time.label, day: DAYS[c].day, date: DAYS[c].label, availableUsers, unavailableUsers })}
+                ></div>
               );
             })}
           </>
