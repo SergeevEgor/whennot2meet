@@ -481,7 +481,7 @@ function GroupGrid({
             return (
               <div
                 key={time.key + c}
-                className={`w-14 border border-gray-200 ${count === 0 ? "bg-rose-100" : "bg-emerald-300"}`}
+                className={`w-14 border border-gray-200 ${heatmapColor(count)}`}
                 style={{ height: "22px" }}
                 onMouseEnter={() =>
                   setHoverInfo({
@@ -493,7 +493,7 @@ function GroupGrid({
                   })
                 }
                 onMouseLeave={() => setHoverInfo(null)}
-              ></div>
+            onClick={() => setHoverInfo({ time: time.label, day: DAYS[c].day, date: DAYS[c].label, availableUsers, unavailableUsers })}              ></div>
             );
           })}
         </>
