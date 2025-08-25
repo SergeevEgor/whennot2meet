@@ -291,6 +291,7 @@ export default function EventPage() {
               participantKeys={participantKeys}
               availabilityCount={availabilityCount}
               setHoverInfo={setHoverInfo}
+              heatmapColor={heatmapColor}
             />
           </div>
         )}
@@ -340,6 +341,7 @@ export default function EventPage() {
                 participantKeys={participantKeys}
                 availabilityCount={availabilityCount}
                 setHoverInfo={setHoverInfo}
+                heatmapColor={heatmapColor}
               />
             </div>
             <div className="w-56 border rounded p-2 bg-gray-50">
@@ -448,6 +450,7 @@ function GroupGrid({
   participantKeys,
   availabilityCount,
   setHoverInfo,
+  heatmapColor,
 }) {
   return (
     <div
@@ -493,7 +496,16 @@ function GroupGrid({
                   })
                 }
                 onMouseLeave={() => setHoverInfo(null)}
-            onClick={() => setHoverInfo({ time: time.label, day: DAYS[c].day, date: DAYS[c].label, availableUsers, unavailableUsers })}              ></div>
+                onClick={() =>
+                  setHoverInfo({
+                    time: time.label,
+                    day: DAYS[c].day,
+                    date: DAYS[c].label,
+                    availableUsers,
+                    unavailableUsers,
+                  })
+                }
+              ></div>
             );
           })}
         </>
