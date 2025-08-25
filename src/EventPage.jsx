@@ -205,6 +205,7 @@ export default function EventPage() {
         <input type="text" value={name} onChange={(e) => { setName(e.target.value); localStorage.setItem("username", e.target.value); }} placeholder="Enter your name" className="border rounded px-2 py-1 w-full" />
       </div>
 
+      {/* MOBILE tabs */}
       <div className="sm:hidden w-full">
         <div className="flex gap-2 mb-4">
           <button onClick={() => setTab("personal")} className={`flex-1 py-2 rounded ${tab === "personal" ? "bg-emerald-500 text-white" : "bg-gray-200 text-gray-700"}`}>My Availability</button>
@@ -216,15 +217,42 @@ export default function EventPage() {
         {tab === "group" && (
           <StickyGroupGrid TIMES={times} DAYS={dates} participants={participants} participantKeys={participantKeys} availabilityCount={availabilityCount} setHoverInfo={setHoverInfo} heatmapColor={heatmapColor} />
         )}
+        <Details hoverInfo={hoverInfo} mobile />
       </div>
 
+      {/* DESKTOP */}
       <div className="hidden sm:flex gap-8 w-full justify-center">
         {name && (
           <>
             <StickyGrid grid={grid} toggleCell={toggleCell} handleMouseDown={handleMouseDown} handleMouseEnter={handleMouseEnter} TIMES={times} DAYS={dates} />
             <StickyGroupGrid TIMES={times} DAYS={dates} participants={participants} participantKeys={participantKeys} availabilityCount={availabilityCount} setHoverInfo={setHoverInfo} heatmapColor={heatmapColor} />
+            <Details hoverInfo={hoverInfo} />
           </>
         )}
+      </div>
+
+      {/* Participants */}
+      <div className="mt-8 w-full sm:w-64 text-center">
+        <h2 className="font-semibold mb-2">Participants</h2>
+        <ul className="space-y-1">
+          {participantKeys.map((u) => (
+            <li key={u}>{u}</li>
+          ))}
+        </ul>
+        <div className="mt-3">
+          <button onClick={() => setRemoveMode(!removeMode)} className="text-xs text-rose-600 hover:underline">
+            {removeMode ? "Cancel Remove Mode" : "Remove a Participant"}
+          </button>
+          {removeMode && (
+            <div className="mt-2 space-y-1">
+              {participantKeys.map((u) => (
+                <button key={u} onClick={() => removeUser(u)} className="block w-full text-xs text-rose-600 hover:bg-rose-50 border rounded px-1 py-0.5">
+                  ❌ {u}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -282,6 +310,23 @@ function StickyGroupGrid({ TIMES, DAYS, participants, participantKeys, availabil
           </>
         ))}
       </div>
+    </div>
+  );
+}
+
+function Details({ hoverInfo, mobile }) {
+  return (
+    <div className={`border rounded p-2 bg-gray-50 ${mobile ? "w-full mt-4" : "w-56"}`}>
+      <h2 className="text-sm font-semibold mb-1">Details</h2>
+      {hoverInfo ? (
+        <>
+          <p className="text-xs mb-1">{hoverInfo.day} {hoverInfo.date} at {hoverInfo.time}</p>
+          <p className="text-xs text-green-700">✅ Available: {hoverInfo.availableUsers.join(", ") || "None"}</p>
+          <p className="text-xs text-rose-700">❌ Unavailable: {hoverInfo.unavailableUsers.join(", ") || "None"}</p>
+        </>
+      ) : (
+        <p className="text-xs text-gray-500">{mobile ? "Tap a cell" : "Hover a cell"} to see details</p>
+      )}
     </div>
   );
 }
